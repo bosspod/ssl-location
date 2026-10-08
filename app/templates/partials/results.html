@@ -1,0 +1,220 @@
+{% macro source_label(source) -%}
+  {%- if source == 'google' -%}Google Maps{% elif source == 'here' %}HERE{% elif source == 'longdo' %}Longdo Map{% elif source == 'openstreetmap' %}OpenStreetMap{% elif source == 'location_master' %}ข้อมูลที่ยืนยันแล้ว{% elif source == 'ai_research' %}AI Research{% else %}{{ source }}{% endif -%}
+{%- endmacro %}
+
+{% macro field_label(field) -%}
+  {%- if field in ['place_name', 'placeName', 'name'] -%}ชื่อสถานที่
+  {%- elif field in ['alias', 'aliases'] -%}ชื่อเรียกอื่น
+  {%- elif field in ['company_name', 'companyName'] -%}ชื่อบริษัท
+  {%- elif field in ['branch_name', 'branchName'] -%}ชื่อสาขา
+  {%- elif field in ['site_name', 'siteName', 'site_context', 'site_type'] -%}จุดปฏิบัติการเฉพาะ
+  {%- elif field in ['area_context', 'areaContext'] -%}บริเวณค้นหาโดยประมาณ
+  {%- elif field in ['registered_address', 'registeredAddress'] -%}ที่อยู่จดทะเบียน DBD
+  {%- elif field == 'phone' -%}เบอร์โทร
+  {%- elif field in ['house_number', 'houseNumber'] -%}บ้านเลขที่
+  {%- elif field in ['house_number_partial', 'house number partial'] -%}บ้านเลขที่ตรงบางส่วน
+  {%- elif field == 'road' -%}ถนน
+  {%- elif field == 'soi' -%}ซอย
+  {%- elif field == 'subdistrict' -%}ตำบล/แขวง
+  {%- elif field == 'district' -%}อำเภอ/เขต
+  {%- elif field == 'province' -%}จังหวัด
+  {%- elif field in ['postal_code', 'postalCode'] -%}รหัสไปรษณีย์
+  {%- elif field in ['provider_consensus', 'consensus'] -%}พิกัดตรงกันหลายแหล่ง
+  {%- elif field in ['landmark', 'landmark_context'] -%}จุดสังเกต/พื้นที่
+  {%- elif field in ['category', 'place_type'] -%}ประเภทธุรกิจ
+  {%- elif field in ['coordinates', 'location'] -%}ตำแหน่งพิกัด
+  {%- elif field == 'address' -%}ที่อยู่
+  {%- else -%}{{ field | replace('_', ' ') }}{% endif -%}
+{%- endmacro %}
+
+{% macro location_preview(preview, query) -%}
+{% if preview %}
+<section class="overflow-hidden rounded-2xl border border-sky-200 bg-white shadow-sm" aria-label="แผนที่และ Street View">
+  <div class="flex flex-wrap items-center justify-between gap-2 border-b border-sky-100 bg-sky-50 px-5 py-4 sm:px-6">
+    <div>
+      <h2 class="text-lg font-bold text-sky-950">หมุดแผนที่{% if preview.name %}: {{ preview.name }}{% endif %}</h2>
+      <p class="mt-1 text-xs text-sky-800">แผนที่และ Street View • {{ '%.6f'|format(preview.latitude) }}, {{ '%.6f'|format(preview.longitude) }}</p>
+    </div>
+    <div class="flex flex-wrap gap-3"><a class="text-sm font-semibold text-sky-700 underline decoration-sky-300 underline-offset-2" href="https://www.google.com/maps/search/?api=1&amp;query={{ preview.latitude }},{{ preview.longitude }}" target="_blank" rel="noopener noreferrer">เปิดหมุดใน Google Maps ↗</a><a class="text-sm font-semibold text-emerald-700 underline decoration-emerald-300 underline-offset-2" href="https://www.google.com/maps/dir/?api=1&amp;destination={{ preview.latitude }},{{ preview.longitude }}&amp;travelmode=driving" target="_blank" rel="noopener noreferrer">นำทางไปหมุด ↗</a></div>
+  </div>
+  <div class="grid lg:grid-cols-2">
+    <div class="border-b border-slate-200 lg:border-b-0 lg:border-r">
+      <p class="px-4 pt-4 text-sm font-bold text-slate-900">Map</p>
+      {% if street_view_api_key %}
+      <iframe class="location-preview-frame" title="แผนที่ของ {{ query }}" src="https://www.google.com/maps/embed/v1/place?key={{ street_view_api_key|urlencode }}&amp;q={{ preview.latitude }},{{ preview.longitude }}&amp;zoom=18&amp;language=th&amp;region=TH" loading="eager" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+      {% else %}
+      <iframe class="location-preview-frame" title="แผนที่ของ {{ query }}" src="https://maps.google.com/maps?q={{ preview.latitude }},{{ preview.longitude }}&amp;z=18&amp;output=embed" loading="eager" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+      {% endif %}
+    </div>
+    <div>
+      <div class="flex items-center justify-between gap-2 px-4 pt-4">
+        <p class="text-sm font-bold text-slate-900">Street View บริเวณหมุด</p>
+        <a class="text-xs font-semibold text-sky-700 underline decoration-sky-300 underline-offset-2" href="https://www.google.com/maps/@?api=1&amp;map_action=pano&amp;viewpoint={{ preview.latitude }},{{ preview.longitude }}" target="_blank" rel="noopener noreferrer">เปิดเต็มจอ ↗</a>
+      </div>
+      {% if street_view_api_key %}
+      <iframe class="street-view-frame" title="Street View ของ {{ query }}" src="https://www.google.com/maps/embed/v1/streetview?key={{ street_view_api_key|urlencode }}&amp;location={{ preview.latitude }},{{ preview.longitude }}&amp;language=th&amp;region=TH" loading="eager" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+      {% else %}
+      <div class="flex min-h-[22rem] items-center justify-center bg-slate-50 p-6 text-center"><div><p class="font-semibold text-slate-800">เปิดดู Street View ได้ทันทีใน Google Maps</p><a class="mt-3 inline-flex rounded-xl bg-slate-800 px-4 py-3 text-sm font-semibold text-white" href="https://www.google.com/maps/@?api=1&amp;map_action=pano&amp;viewpoint={{ preview.latitude }},{{ preview.longitude }}" target="_blank" rel="noopener noreferrer">เปิด Street View ↗</a></div></div>
+      {% endif %}
+    </div>
+  </div>
+  <p class="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">พิกัดจาก {{ source_label(preview.provider) }}{% if preview.address %} • ที่อยู่ในแผนที่: {{ preview.address }}{% endif %}</p>
+</section>
+{% endif %}
+{%- endmacro %}
+
+{% macro candidate_card(candidate, title, featured=false) -%}
+{% set confidence = candidate.confidence_score if candidate.confidence_score else candidate.score / 100 %}
+{% set confidence_percent = confidence * 100 %}
+{% if confidence >= 0.88 %}
+  {% set confidence_label = 'มั่นใจสูงมาก' %}{% set badge_class = 'bg-emerald-100 text-emerald-800 ring-emerald-200' %}
+{% elif confidence >= 0.70 %}
+  {% set confidence_label = 'มั่นใจสูง' %}{% set badge_class = 'bg-sky-100 text-sky-800 ring-sky-200' %}
+{% elif confidence >= 0.45 %}
+  {% set confidence_label = 'ควรตรวจสอบ' %}{% set badge_class = 'bg-amber-100 text-amber-900 ring-amber-200' %}
+{% else %}
+  {% set confidence_label = 'ข้อมูลยังน้อย' %}{% set badge_class = 'bg-slate-100 text-slate-700 ring-slate-200' %}
+{% endif %}
+<article class="overflow-hidden rounded-2xl border {{ 'border-emerald-300 bg-white shadow-lg shadow-emerald-100/60' if featured else 'border-slate-200 bg-white shadow-sm' }}">
+  {% if featured %}<div class="bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white sm:px-6">✓ สถานที่ที่ระบบแนะนำ</div>{% endif %}
+  <div class="p-5 sm:p-6">
+    {% if candidate.location_role == 'registered_office' %}<div class="mb-4 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900"><p class="font-bold">สำนักงานจดทะเบียนของนิติบุคคล</p><p class="mt-1 text-xs">พิกัดนี้ตรงกับที่อยู่จดทะเบียนจาก DBD แต่ยังไม่ได้ยืนยันว่าเป็นคลังหรือจุดรับส่งสินค้า</p></div>{% endif %}
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="min-w-0 flex-1">
+        {% if not featured %}<p class="text-xs font-bold uppercase tracking-wider text-slate-500">{{ title }}</p>{% endif %}
+        <h2 class="mt-1 {{ 'text-2xl' if featured else 'text-xl' }} font-bold leading-tight text-slate-950">{{ candidate.place_name or candidate.name or 'ไม่ระบุชื่อสถานที่' }}</h2>
+      </div>
+      <div class="rounded-xl px-3 py-2 text-center ring-1 {{ badge_class }}">
+        <p class="text-lg font-extrabold leading-none">{{ '%.0f'|format(confidence_percent) }}%</p>
+        <p class="mt-1 text-[11px] font-semibold">{{ confidence_label }}</p>
+      </div>
+    </div>
+
+    <section class="mt-5 rounded-xl bg-slate-50 p-4" aria-label="ที่อยู่ปลายทาง">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">ที่อยู่ปลายทาง</p>
+      <p class="mt-1 text-base font-medium leading-relaxed text-slate-900">{{ candidate.normalized_address or candidate.address or 'ยังไม่พบที่อยู่มาตรฐาน' }}</p>
+      <div class="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-600">
+        {% if candidate.phone %}<span><span class="font-semibold text-slate-800">โทร:</span> {{ candidate.phone }}</span>{% endif %}
+        {% if candidate.business_status %}<span><span class="font-semibold text-slate-800">สถานะ:</span> {{ candidate.business_status }}</span>{% endif %}
+        <span><span class="font-semibold text-slate-800">พิกัด:</span> {{ '%.6f'|format(candidate.latitude) }}, {{ '%.6f'|format(candidate.longitude) }}</span>
+      </div>
+    </section>
+
+    {% if candidate.reason %}
+    <section class="mt-4 rounded-r-xl border-l-4 {{ 'border-emerald-400 bg-emerald-50' if featured else 'border-slate-300 bg-slate-50' }} px-4 py-3">
+      <p class="text-xs font-bold {{ 'text-emerald-800' if featured else 'text-slate-600' }}">ทำไมระบบเลือกสถานที่นี้</p>
+      <p class="mt-1 text-sm leading-relaxed text-slate-700">{{ candidate.reason }}</p>
+    </section>
+    {% endif %}
+
+    {% if candidate.matched_fields %}
+    <section class="mt-4">
+      <p class="text-xs font-semibold text-slate-500">ข้อมูลที่ตรวจแล้วว่าตรงกัน</p>
+      <div class="mt-2 flex flex-wrap gap-2">
+        {% for field in candidate.matched_fields %}<span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800 ring-1 ring-inset ring-emerald-200">✓ {{ field_label(field) }}</span>{% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% if candidate.contradictions or candidate.missing_evidence %}
+    <section class="mt-4 grid gap-3 sm:grid-cols-2">
+      {% if candidate.contradictions %}<div class="rounded-xl border border-rose-200 bg-rose-50 p-3"><p class="text-xs font-bold text-rose-800">ข้อมูลที่ขัดแย้ง</p><ul class="mt-2 list-disc space-y-1 pl-4 text-xs text-rose-900">{% for item in candidate.contradictions %}<li>{{ item }}</li>{% endfor %}</ul></div>{% endif %}
+      {% if candidate.missing_evidence %}<div class="rounded-xl border border-amber-200 bg-amber-50 p-3"><p class="text-xs font-bold text-amber-900">หลักฐานที่ยังขาด</p><ul class="mt-2 list-disc space-y-1 pl-4 text-xs text-amber-900">{% for item in candidate.missing_evidence %}<li>{{ field_label(item) }}</li>{% endfor %}</ul></div>{% endif %}
+    </section>
+    {% endif %}
+
+    <div class="mt-5 border-t border-slate-100 pt-4">
+      <p class="text-xs font-semibold text-slate-500">ตรวจพบจาก</p>
+      <p class="mt-1 text-sm font-medium text-slate-700">{% for source in candidate.sources %}{{ source_label(source) }}{{ ' • ' if not loop.last else '' }}{% else %}ไม่ระบุแหล่งข้อมูล{% endfor %}</p>
+    </div>
+
+    <section class="mt-5" aria-label="เลือกแอปนำทาง">
+      <p class="mb-2 text-sm font-bold text-slate-900">เปิดแผนที่และนำทาง</p>
+      <nav class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4" aria-label="เปิดแอปแผนที่เพื่อนำทาง">
+        {% set google_place_id = candidate.provider_place_ids.get('google') or (candidate.provider_place_id if candidate.provider == 'google' else none) %}
+        <a class="rounded-xl bg-blue-600 px-3 py-3 text-center text-sm font-semibold text-white transition hover:bg-blue-700" href="https://www.google.com/maps/dir/?api=1&amp;destination={{ candidate.latitude }},{{ candidate.longitude }}{% if google_place_id %}&amp;destination_place_id={{ google_place_id|urlencode }}{% endif %}&amp;travelmode=driving&amp;dir_action=navigate" target="_blank" rel="noopener noreferrer">Google Maps ↗</a>
+        <a class="rounded-xl bg-teal-600 px-3 py-3 text-center text-sm font-semibold text-white transition hover:bg-teal-700" href="https://share.here.com/l/{{ candidate.latitude }},{{ candidate.longitude }}?p=yes&amp;z=16" target="_blank" rel="noopener noreferrer">HERE WeGo ↗</a>
+        <a class="rounded-xl bg-orange-600 px-3 py-3 text-center text-sm font-semibold text-white transition hover:bg-orange-700" href="https://map.longdo.com/?lat={{ candidate.latitude }}&amp;long={{ candidate.longitude }}&amp;res=1024&amp;locale=th" target="_blank" rel="noopener noreferrer">Longdo Map ↗</a>
+        <a class="rounded-xl bg-slate-700 px-3 py-3 text-center text-sm font-semibold text-white transition hover:bg-slate-800" href="https://www.google.com/maps/@?api=1&amp;map_action=pano&amp;viewpoint={{ candidate.latitude }},{{ candidate.longitude }}" target="_blank" rel="noopener noreferrer">Street View ↗</a>
+      </nav>
+    </section>
+
+    {% if 'openstreetmap' in candidate.sources %}<p class="mt-2 text-xs text-slate-400">© <a class="map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a></p>{% endif %}
+    <form hx-post="/ui/confirm" hx-target="#results" hx-swap="innerHTML" class="mt-5">
+      <input type="hidden" name="raw_input" value="{{ result.query }}">
+      <input type="hidden" name="candidate_json" value="{{ candidate.model_dump_json(by_alias=true) | forceescape }}">
+      <button class="w-full rounded-xl {{ 'bg-slate-900 text-white hover:bg-slate-800' if featured else 'border border-slate-300 bg-white text-slate-800 hover:bg-slate-50' }} px-4 py-3 font-semibold transition" type="submit">{{ 'ยืนยันว่าเป็นสถานที่นี้' if featured else 'เลือกสถานที่นี้แทน' }}</button>
+    </form>
+  </div>
+</article>
+{%- endmacro %}
+
+{% if result.best_match %}
+<section class="space-y-6">
+  <p class="text-center text-xs text-slate-500">ค้นหาเสร็จใน {{ '%.1f'|format(result.processing_time_ms / 1000) }} วินาที • แสดง Candidate ที่มั่นใจที่สุด</p>
+  {% if result.status.value == 'CONFLICT' %}<div class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"><p class="font-bold">พบหลายสถานที่ที่ใกล้เคียงกัน</p><p class="mt-1">กรุณาเทียบที่อยู่และเลือกผลลัพธ์ที่ถูกต้องก่อนนำทาง</p></div>{% endif %}
+
+  {{ location_preview(result.map_preview, result.query) }}
+  {{ candidate_card(result.best_match, 'Candidate ที่มั่นใจที่สุด', true) }}
+
+  <details class="group rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-semibold text-slate-800 sm:px-6"><span>รายละเอียดการค้นหาและแหล่งอ้างอิง</span><span class="text-slate-400 transition group-open:rotate-180">⌄</span></summary>
+    <div class="border-t border-slate-100 px-5 py-4 text-sm sm:px-6">
+      {% if result.research.status == 'success' %}
+      <div class="rounded-xl bg-sky-50 p-4 text-sky-950"><p class="font-semibold">AI ตรวจสอบข้อมูลเพิ่มเติมแล้ว</p><p class="mt-1 text-xs">ค้น {{ result.research.rounds }} รอบ{% if result.research.exhausted %} • ตรวจครบตามกลยุทธ์แล้ว{% endif %} • พิกัดมาจาก Map Provider หรือข้อมูลที่ยืนยันแล้วเท่านั้น</p>{% if result.research.summary %}<p class="mt-2 leading-relaxed">{{ result.research.summary }}</p>{% endif %}</div>
+      {% elif result.research.status == 'error' %}<div class="rounded-xl bg-amber-50 p-4 text-amber-900">AI Research ใช้งานไม่ได้ชั่วคราว ผลลัพธ์นี้คำนวณจาก Map Provider ต่อจนจบ</div>{% endif %}
+
+      <div class="mt-4 rounded-xl border border-slate-200 p-4">
+        <p class="font-semibold text-slate-800">การตรวจข้อมูลนิติบุคคล (DBD)</p>
+        {% if result.research.dbd.status == 'searched' %}
+          <p class="mt-1 text-emerald-700">ตรวจพบข้อมูลทางการแล้ว</p>
+          {% if result.research.dbd.company_name %}<p class="mt-2 font-medium">{{ result.research.dbd.company_name }}</p>{% endif %}
+          {% if result.research.dbd.registration_number %}<p class="text-xs">เลขทะเบียน: {{ result.research.dbd.registration_number }}</p>{% endif %}
+          {% if result.research.dbd.registered_address %}<p class="text-xs">ที่อยู่จดทะเบียน: {{ result.research.dbd.registered_address }}</p>{% endif %}
+          <p class="mt-2 text-xs text-slate-500">ที่อยู่จดทะเบียนใช้ยืนยันตัวบริษัท ไม่ถือเป็นจุดรับส่งสินค้าโดยอัตโนมัติ</p>
+        {% elif result.research.dbd.status == 'unavailable' %}<p class="mt-1 text-amber-700">DBD ไม่ส่งข้อมูลที่ระบบตรวจสอบได้ในครั้งนี้</p><p class="mt-1 text-xs text-slate-500">{{ result.research.dbd.reason }}</p>
+        {% elif result.research.dbd.status == 'discovered' %}<p class="mt-1 text-sky-700">พบเลขทะเบียนเบื้องต้นจาก DataForThai</p><p class="mt-1 text-xs text-slate-500">ยังไม่ถือเป็นข้อมูลทางการจนกว่าจะตรวจผ่าน DBD Open API</p>
+        {% elif result.research.dbd.status == 'not_found' %}<p class="mt-1 text-slate-600">ค้นแล้ว แต่ยังไม่มีหลักฐานทางการที่ยืนยันได้</p>
+        {% else %}<p class="mt-1 text-slate-600">ไม่ได้ค้น เพราะข้อมูลยังไม่ชี้ถึงนิติบุคคลที่เจาะจง</p>{% if result.research.dbd.reason %}<p class="mt-1 text-xs text-slate-500">{{ result.research.dbd.reason }}</p>{% endif %}{% endif %}
+      </div>
+
+      {% if result.research.evidence %}<div class="mt-4"><p class="font-semibold text-slate-800">แหล่งข้อมูลที่ระบบใช้ตรวจสอบ</p><ul class="mt-2 space-y-2">{% for source in result.research.evidence[:6] %}<li><a class="block truncate text-sky-700 underline decoration-sky-300 underline-offset-2" href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.title }}</a></li>{% endfor %}</ul></div>{% endif %}
+    </div>
+  </details>
+
+  {% if result.alternatives %}
+  <section><div class="mb-3"><h3 class="text-lg font-bold text-slate-900">สถานที่อื่นที่อาจเป็นไปได้</h3><p class="mt-1 text-sm text-slate-500">ใช้เมื่อที่อยู่ของผลลัพธ์หลักไม่ตรงกับข้อมูลที่คุณมี</p></div><div class="space-y-4">{% for candidate in result.alternatives %}{{ candidate_card(candidate, 'ตัวเลือกที่ ' ~ loop.index, false) }}{% endfor %}</div></section>
+  {% endif %}
+</section>
+{% else %}
+<section class="space-y-6">
+  {{ location_preview(result.map_preview, result.query) }}
+  {% if result.map_preview %}<div class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950"><p class="font-bold">ปักหมุดให้แล้วจากผลแผนที่{% if result.map_preview.name %}ชื่อ {{ result.map_preview.name }}{% endif %}</p><p class="mt-1">{{ 'AI ระบุบริษัทได้ แต่ยังไม่มีหลักฐานยืนยันว่าหมุดนี้คือคลังสินค้าสาขาที่ต้องการ' if result.parsed.company_name else 'นี่เป็นผลแผนที่เบื้องต้นของคำค้นที่อยู่ ยังไม่ยืนยันว่าเป็นสถานที่ปลายทาง' }}{% if result.parsed.postal_code and result.map_preview.postal_code and result.parsed.postal_code != result.map_preview.postal_code %} • รหัสไปรษณีย์ที่คุณให้คือ {{ result.parsed.postal_code }} แต่ผลแผนที่แสดง {{ result.map_preview.postal_code }}{% endif %} ตรวจหมุดและ Street View ก่อนนำทางจริง</p></div>{% endif %}
+<div class="rounded-2xl border border-amber-200 bg-white p-7 text-center shadow-sm">
+  <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-xl">?</div>
+  <h2 class="mt-4 text-lg font-bold">{{ 'ปักหมุดให้ตรวจแล้ว แต่ยังไม่ยืนยันจุดส่งสินค้า' if result.map_preview else 'ยังระบุตำแหน่งปลายทางไม่ได้' }}</h2>
+  <p class="mt-1 text-xs text-slate-500">ค้นหาเสร็จใน {{ '%.1f'|format(result.processing_time_ms / 1000) }} วินาที</p>
+  {% if result.parsed.company_name %}<div class="mx-auto mt-4 max-w-lg rounded-xl bg-sky-50 p-4 text-left text-sm text-sky-950"><p class="font-semibold">ระบุตัวบริษัทที่ต้องการค้นหาได้</p><p class="mt-1 text-base font-bold">{{ result.parsed.company_name }}</p>{% if result.parsed.site_name %}<p class="mt-1">จุดปฏิบัติการที่ต้องตรง: {{ result.parsed.site_name }}</p>{% elif result.parsed.area_context %}<p class="mt-1">บริเวณค้นหาโดยประมาณ: {{ result.parsed.area_context }}</p>{% endif %}<p class="mt-2 text-xs leading-relaxed text-sky-800">{{ 'หมุดด้านบนเป็นตำแหน่งจากแผนที่สำหรับตรวจสอบ ยังไม่ยืนยันว่าเป็นจุดปฏิบัติการนี้' if result.map_preview else 'แต่ยังไม่มี Candidate ที่มีหลักฐานเพียงพอ ระบบจึงไม่คืนพิกัดหลักเพื่อป้องกันการนำทางผิด' }}</p></div>{% endif %}
+  <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600">ลองเพิ่มชื่อร้านหรือบริษัท สาขา บ้านเลขที่ ตำบล/อำเภอ จังหวัด หรือเบอร์โทร ระบบจะนำข้อมูลทั้งหมดไปค้นหาใหม่</p>
+  {% if result.alternatives %}
+  <div class="mx-auto mt-5 max-w-2xl text-left">
+    <p class="text-sm font-bold text-slate-800">Candidate ที่เกี่ยวข้อง</p>
+    <p class="mt-1 text-xs text-slate-500">ไม่พบผลลัพธ์หลัก แต่มีข้อมูลจากแหล่งค้นหาบางส่วนให้ตรวจสอบ</p>
+    <div class="mt-3 space-y-3">
+      {% for candidate in result.alternatives[:3] %}
+      {% set candidate_confidence = candidate.confidence_score if candidate.confidence_score else candidate.score / 100 %}
+      <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div class="flex items-start justify-between gap-3"><p class="font-semibold text-slate-900">{{ candidate.place_name or candidate.name or 'ไม่ระบุชื่อ' }}</p><span class="whitespace-nowrap rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-900">{{ '%.0f'|format(candidate_confidence * 100) }}%</span></div>
+        <p class="mt-1 text-sm text-slate-600">{{ candidate.normalized_address or candidate.address or 'ไม่มีที่อยู่มาตรฐาน' }}</p>
+        {% if candidate.reason %}<p class="mt-2 text-xs leading-relaxed text-slate-500">{{ candidate.reason }}</p>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% if result.providers and result.providers|selectattr('status', 'equalto', 'disabled')|list|length == result.providers|length %}<p class="mt-3 text-xs text-amber-700">ยังไม่ได้ตั้งค่า Map Provider API key</p>{% endif %}
+  {% if (result.research.status == 'success' or result.research.status == 'no_hints') and not result.map_preview %}<p class="mt-3 text-xs text-sky-700">AI ค้นข้อมูลสาธารณะเพิ่มเติมแล้ว แต่ยังไม่มีพิกัดที่น่าเชื่อถือเพียงพอ</p>{% elif result.research.status == 'error' %}<p class="mt-3 text-xs text-amber-700">AI Research ใช้งานไม่ได้ชั่วคราว</p>{% endif %}
+  {% if result.research.dbd.status == 'unavailable' %}<p class="mt-2 text-xs text-amber-700">{{ result.research.dbd.reason }}</p>{% endif %}
+</div>
+</section>
+{% endif %}

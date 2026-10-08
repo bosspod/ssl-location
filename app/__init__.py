@@ -1,0 +1,1 @@
+"""Location resolution application."""

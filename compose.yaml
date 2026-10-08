@@ -1,0 +1,51 @@
+services:
+  mongo:
+    image: mongo:8.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: location
+      MONGO_INITDB_ROOT_PASSWORD: location
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--username", "location", "--password", "location", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping').ok"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+    volumes:
+      - mongo_data:/data/db
+
+  web:
+    build:
+      context: .
+      target: runtime
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: mongodb://location:location@mongo:27017/?authSource=admin
+      MONGODB_DATABASE: ssl_location_optimization
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  test:
+    build:
+      context: .
+      target: test
+    environment:
+      DATABASE_URL: mongodb://location:location@mongo:27017/?authSource=admin
+      MONGODB_DATABASE: ssl_location_optimization_test
+      SIGNING_SECRET: test-signing-secret
+    depends_on:
+      mongo:
+        condition: service_healthy
+    command: ["sh", "-c", "ruff check --no-cache . && mypy --cache-dir=/tmp/mypy-cache app && COVERAGE_FILE=/tmp/.coverage pytest -p no:cacheprovider --cov=app --cov-report=term-missing"]
+
+volumes:
+  mongo_data:
